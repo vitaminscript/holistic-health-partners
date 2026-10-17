@@ -24,7 +24,7 @@ Mobile is the majority of your organic traffic and the weakest part of the store
 | Inline JavaScript shipped on every page | 37 scripts, ~175 KB, plus jQuery and 9 third-party apps | crawled HTML |
 | New customers who reorder within 90 days | ~12% (flat for a year) | Dominik, Sept 29 email |
 
-The single biggest leak is **cart → checkout**: more than half of mobile shoppers who open the cart never reach checkout. The cart page is the #2 mobile exit page (699 exits in 30 days). The second leak is **finding and reordering**: the reorder tool exists but is reachable only by signing in, opening My Account, tapping the Orders tab and scrolling. The third is **adding to cart**: every product carries a required "Recurring Order" option, which turns every product-card button into "Choose Options" and forces a trip to the product page, where the add button sits under several blocks of content and ~175 KB of competing scripts.
+The single biggest leak is **cart → checkout**: more than half of mobile shoppers who open the cart never reach checkout. The cart page is the #2 mobile exit page (699 exits in 30 days). The second leak is **finding and reordering**: the reorder tool exists but is reachable only by signing in, opening My Account, tapping the Orders tab and scrolling. The third is **adding to cart from listings**: every product carries an option, so product cards show "Choose Options" and send shoppers to the product page, where the add button sits under several blocks of content and the delivery choice is labeled "(Required)". The add itself works; the wording and the trip are the problem.
 
 Note on data quality: Ahrefs shows 322,608 desktop visitors with a 95.6% bounce rate in the same 30 days. That is bot traffic, not people. Mobile numbers are the trustworthy ones.
 
@@ -40,7 +40,7 @@ Note on data quality: Ahrefs shows 322,608 desktop visitors with a 95.6% bounce 
 
 > "every time I try to add the garlic it would take me to the product description. It wouldn't add it to my cart."
 
-**Cause 1 — required option on every product.** Every product has the MiniBC "Recurring Order" dropdown as a **required** option (`attribute[35114]`, `required`, placeholder text "Choose Options"). BigCommerce treats any product with a required option as "has options", so every product card on category, brand, search and related-product carousels renders **"Choose Options"** (a link to the product page) instead of **"Add to Cart"**. In stock Cornerstone those card buttons also live in the hover-only figcaption that is hidden on small screens, so on a phone tapping anywhere on a card opens the product page. **Verify on device:** confirm the card button is invisible on a phone.
+**Cause 1 — the option setup works, the wording doesn't.** Every product carries the MiniBC "Recurring Order" option, pre-selected to "One Time Purchase", and products with sizes pre-select the first size. Add to Cart works on a phone when tapped (confirmed on device by Michael on Oct 17). What goes wrong is the label: "Recurring Order: (Required)" reads as "you must set up a recurring order", and shoppers back out or write in. Because every product has an option, product cards on category, brand and search pages show **"Choose Options"** (a link to the product page) instead of **"Add to Cart"**, and in stock Cornerstone those card buttons are hover-only and hidden on small screens, so on a phone a tap anywhere on a card opens the product page. That is the trip the customer described. **Verify on device:** confirm the card button is invisible on a phone.
 
 **Cause 2 — Rapid Order silently redirects on failure.** In the reorder widget's `addToCart()`, when the Storefront Cart API returns an error the code does `if (url) { window.location.href = url; return; }`. A failed add (expired cart, option mismatch, out-of-stock variant) sends the customer to the product description page with no message. That is exactly the behavior described.
 
@@ -89,7 +89,7 @@ Severity: 🔴 Critical (blocks or loses orders) · 🟡 Moderate (friction, mea
 | Finding | Severity | Evidence |
 |---|---|---|
 | Add to Cart sits below gallery, info list, consultation card and the Recurring Order select; no sticky add-to-cart bar. | 🔴 | product HTML |
-| "Recurring Order" is labeled "(Required)" with a "Choose Options" placeholder, which reads like an unfinished choice even though "One Time Purchase" is pre-selected. | 🟡 | product HTML |
+| "Recurring Order: (Required)" reads as a demand to subscribe even though "One Time Purchase" is pre-selected and the add works. Copy problem, not a code problem. | 🔴 | product HTML, device check |
 | TBT 600–3,000 ms on product pages (Tru Niagen 2,254 ms; Magnesium Glycinate 2,212 ms; Ultra Binder 2,989 ms). | 🔴 | Ahrefs Site Audit |
 | ~12 product pages in the top 40 have CLS 0.7–1.4 (Cayenne 0.91, Wobenzym N 0.88, Charcoal Binder 1.34, Garlic 5000 1.38). All product images lack width/height; late-injected blocks (consultation card, free-shipping line, notices, review form) shift content. | 🔴 | Ahrefs Site Audit |
 | Nine third-party apps load on every product page: Easy Upsell, SaveYourCart, MiniBC, BeCloudify Stock Notify, Klaviyo, Searchanise, Seona (usestyle.ai), DropInBlog recent posts, chp-help-widget. Each adds scripts and can intercept the add-to-cart click. | 🟡 | product HTML |
@@ -126,8 +126,16 @@ Severity: 🔴 Critical (blocks or loses orders) · 🟡 Moderate (friction, mea
 | Zero images with width/height across all crawled templates. | 🔴 | crawled HTML |
 | 1,876 pages link to redirecting URLs; 207 redirects; 18 4XX pages; 80 images missing alt text; 230 pages with incomplete Open Graph tags. | 🟢 | Ahrefs Site Audit |
 
-### 3.9 What works well
+### 3.9 Two more items from the Oct 17 phone screenshots
+| Finding | Severity | Evidence |
+|---|---|---|
+| The "Need help?" chat bubble overlaps the Add to Wish List button and sits beside Add to Cart in the thumb zone. | 🟡 | screenshots |
+| The "Unlock 20% Off" bar pins to the bottom of the screen on every page and competes with the chat bubble and Add to Cart; show it once per session or hide it on product pages. | 🟡 | screenshots |
+| Product page has two large promo cards (Free Product Advice, Blog Post) between the gallery and the buy controls, pushing Add to Cart about two screens down. | 🟡 | screenshots |
+
+### 3.10 What works well
 - Checkout itself converts at a healthy 68% once reached.
+- Product-option defaults are set correctly: One Time Purchase and the first size are pre-selected, so a single tap on Add to Cart works.
 - The Rapid Order concept is right: "Everything you've ordered before — one click to order it again" is exactly what the complaining customer wanted. It just needs to be findable.
 - Klaviyo lifecycle flows are in place (Abandoned Checkout, Browse Abandonment, First-Time Customer, RFM segments 1–10), so reorder and recovery messaging has somewhere to live.
 - Brand visual language (green #7FA923, Hanken Grotesk) is consistent across the custom widgets.
@@ -152,7 +160,7 @@ Owner column assumes Michael (BigCommerce admin, Script Manager, theme files) an
 | 1.1 | **Make Rapid Order findable.** In the existing order-history script: render on `/account.php` with no `action` too (the My Account landing page) and place Rapid Order *above* the account navigation. Add an anchor `#rapid-order`. | Dominik | 3 h | Logged-in customer sees Rapid Order first on My Account. |
 | 1.2 | Add "Reorder" entry points: (a) mobile mega menu item "Reorder" for logged-in customers (check `customer` via the Storefront API or a body class), (b) a "Reorder from a past order" link in the cart page empty and non-empty states, (c) a "Reorder these items" block on the order confirmation page, (d) a "Reorder" button in the Klaviyo "Loyal Re-Order Accelerator" and post-purchase emails deep-linking to `/account.php#rapid-order`. | Dominik + Michael | 6 h | All four paths land on Rapid Order in one tap. |
 | 1.3 | **Fix the silent redirect.** In `addToCart()` replace `window.location.href = url` with an inline error ("Couldn't add — tap to open product") and log the failure to the Vercel app so you can see why adds fail. | Dominik | 2 h | No redirect on failure; failures visible in logs. |
-| 1.4 | **Unblock product cards.** Option A (preferred): change the MiniBC "Recurring Order" option to *not required* so BigCommerce treats products as option-free and cards show "Add to Cart" (test with MiniBC that a default of "One Time Purchase" still passes through). Option B: keep it required but add a card-level "Add to Cart" that posts `/cart.php?action=add&product_id=X&attribute[35114]=48845`. Either way turn on the Cornerstone setting to show card buttons on mobile and make them always visible (not hover-only). | Michael | 6 h | A phone user can add from category, brand and search results without opening the product page. |
+| 1.4 | **Fix the wording, not the option.** Keep the MiniBC option and its values as they are. Show "Delivery" instead of "Recurring Order:", drop "(Required)" on this option, and add one helper line under the dropdown ("One-time is the default. Choose auto-refill to have it shipped on a schedule."). Do it in the theme language file or the existing label-tweak Script Manager script, not by renaming the shared option (MiniBC matches on the value text). Separately, turn on the Cornerstone card-button setting and make card buttons always visible on phones so "Choose Options" is at least tappable from listings. | Michael | 3 h | No "(Required)" next to the delivery choice; card buttons visible on a phone. |
 | 1.5 | **Sticky add-to-cart bar on product pages** (price + Recurring Order summary + quantity + Add to Cart) pinned to the bottom of the viewport on ≤800px, appearing once the main button scrolls off-screen. | Dominik | 4 h | Button reachable at any scroll position. |
 | 1.6 | **Cart page mobile fixes:** "Continue shopping" button at the top (returns to the last category or Rapid Order), coupon field moved above the totals with helper text ("Clinic members: your 20% is applied automatically at checkout" or whatever is true), and a "Reorder past items" link. | Michael | 3 h | Cart exit rate starts falling in Clarity/analytics. |
 
@@ -173,7 +181,7 @@ Owner column assumes Michael (BigCommerce admin, Script Manager, theme files) an
 | # | Task | Owner | Effort | Done when |
 |---|---|---|---|---|
 | 3.1 | **Header:** sticky on scroll with logo, search icon that expands, account icon (goes to My Account / Rapid Order when logged in, Login when not), cart icon with count that opens a slide-out cart drawer (BigCommerce cart preview) with "Checkout" and "Keep shopping". Replace the duplicate search forms with one. | Dominik | 12 h | One header, one search, one cart path. |
-| 3.2 | **Product page order on mobile:** gallery → title/brand/price → Recurring Order (relabeled "Delivery: One time / Every 30 days…") → quantity → Add to Cart → availability/shipping → consultation card → description tabs as accordions → related products. Remove the "(Required)" label and "Choose Options" placeholder. | Dominik | 10 h | Add to Cart visible within the first 1.5 screens on a 390px-wide phone. |
+| 3.2 | **Product page order on mobile:** gallery → title/brand/price → Recurring Order (relabeled "Delivery: One time / Every 30 days…") → quantity → Add to Cart → availability/shipping → consultation card → description tabs as accordions → related products. Carry the "Delivery" wording from 1.4 into the redesigned layout. | Dominik | 10 h | Add to Cart visible within the first 1.5 screens on a 390px-wide phone. |
 | 3.3 | **Restricted brands:** keep the "Available to clinic members" box but give it a single primary action ("Get free access" → `/access-our-clinic/`) and show the phone number as tappable text. Hide the quantity field and empty button for these products. | Michael | 3 h | No dead add-to-cart states. |
 | 3.4 | **Category and search cards:** 2-column grid, always-visible "Add to Cart", price and brand above the fold of the card, "Members save 20%" badge logic if applicable. | Dominik | 8 h | Cards add to cart in one tap. |
 | 3.5 | **My Account landing:** Rapid Order → recent orders (collapsible) → subscriptions (MiniBC) → addresses/payment. Add a one-line explanation of where pre-2026 orders are. | Dominik | 6 h | Account page is a reorder page first. |
@@ -223,6 +231,7 @@ Use a real iPhone in Safari and a real Android phone in Chrome, on cellular data
 ---
 
 ## 6. Things I could not verify from here
+- An HTTP add-to-cart test I ran on Oct 17 mis-posted the Size option id on three products and failed. Michael confirmed on a phone the same day that Size and Recurring Order both pre-select and Add to Cart works. The product-page issue is wording and layout, not a broken add.
 - Whether the card buttons are visible on phones in your current theme build (stock Cornerstone hides them below the medium breakpoint; your theme may have changed this).
 - Whether the add-to-cart tap on product pages is being intercepted by Easy Upsell, SaveYourCart or MiniBC on mobile (Clarity recordings in Phase 0 will show this).
 - Live cart and checkout page markup (BigCommerce does not let crawlers see them).
