@@ -2,6 +2,8 @@
 
 **Prepared for:** Michael Burton · **Date:** October 17, 2026 · **Scope:** covenanthealthproducts.com on phones
 
+> Step-by-step build instructions for Phase 1 are in `covenant-mobile-implementation-guide.md`.
+
 > How this was done: this session's container cannot reach the live storefront, so I did not tap through the site on a phone. Everything below comes from (1) the Ahrefs Site Audit crawl of the store from Oct 9–16 (full HTML of the homepage, a garlic product page, a category page and a search results page), (2) Ahrefs Lighthouse/CrUX mobile scores for the top 40 traffic pages, (3) Ahrefs Web Analytics filtered to smartphones for the last 30 days, (4) Google Search Console by device for the last 90 days, (5) ~200 customer chatbot inquiries forwarded to your inbox in the last year, and (6) the Klaviyo flow list. Items marked **Verify on device** need a 10‑minute phone check before you build.
 
 ---
@@ -34,7 +36,7 @@ Note on data quality: Ahrefs shows 322,608 desktop visitors with a 95.6% bounce 
 
 > "You need to have a button I tried to just hit my last order and it wouldn't let me like re-order your last order that was impossible to find"
 
-**Cause:** The "Rapid Order" and "Complete Order History" widgets (your chp-order-history Vercel app) are injected by a Script Manager script that exits unless the URL is `/account.php` **and** the `action` is `order_status` (the Orders tab). The guard is literally: `if (!/^\/account\.php/.test(location.pathname)) return;` then `if (_act && _act !== 'order_status') return;`. On a phone the path is: menu → Login → My Account → Orders tab → scroll past the account navigation. Nothing in the header, the mobile mega menu (which offers only "Login"), the cart page, the order confirmation page, or the post-purchase emails links to it. Orders placed before January 2026 (the previous store) are not shown at all, which is why customers write "None of my previous orders show up online" (Apr 28) and "I'm only seeing April of this year" (Jul 9).
+**Cause:** The "Rapid Order" and "Complete Order History" widgets (your chp-order-history Vercel app) are injected by a Script Manager script on My Account, which opens on the Orders tab. Both sections are appended **after** the BigCommerce order list (`host.appendChild(wrap)`), so on a phone the path is: menu → Login → My Account → scroll past the account navigation and the order list. Nothing in the header, the mobile mega menu (which offers only "Login"), the cart page, the order confirmation page, or the post-purchase emails links to it. Orders placed before January 2026 (the previous store) are not shown at all, which is why customers write "None of my previous orders show up online" (Apr 28) and "I'm only seeing April of this year" (Jul 9).
 
 **Same complaint from others:** "Why can't I find my past orders so I can just use those to reorder? I broke my back so everything is hard" (May 27).
 
@@ -109,7 +111,7 @@ Severity: 🔴 Critical (blocks or loses orders) · 🟡 Moderate (friction, mea
 | Finding | Severity | Evidence |
 |---|---|---|
 | 2.5 login page views per visitor on mobile: repeated attempts. Inbox: "I can't log in" (Jun 11), "don't see how to set up account" (Jun 10), "I want to create an account and register my email" (Jun 9). | 🔴 | Ahrefs Web Analytics + inbox |
-| Rapid Order renders only on the Orders tab; My Account landing page shows nothing useful. | 🔴 | order-history script |
+| Rapid Order is appended below the order list on My Account, so phone users scroll past navigation and orders to find it. | 🔴 | order-history script |
 | Pre-2026 orders missing from history. | 🟡 | inbox + script copy |
 | "The edit feature is not letting me update billing address and exp date" (Jul 6). Saved payment methods editing fails on mobile. | 🟡 **Verify on device** | inbox |
 
@@ -157,7 +159,7 @@ Owner column assumes Michael (BigCommerce admin, Script Manager, theme files) an
 ### Phase 1 — Stop the bleeding: reorder, add-to-cart, cart (Weeks 1–2, ~24 hours)
 | # | Task | Owner | Effort | Done when |
 |---|---|---|---|---|
-| 1.1 | **Make Rapid Order findable.** In the existing order-history script: render on `/account.php` with no `action` too (the My Account landing page) and place Rapid Order *above* the account navigation. Add an anchor `#rapid-order`. | Dominik | 3 h | Logged-in customer sees Rapid Order first on My Account. |
+| 1.1 | **Make Rapid Order findable.** In the existing order-history script, insert the Rapid Order section at the top of the account content (`host.insertBefore(wrap, host.firstChild)`) instead of appending it after the order list, and give it the anchor `#rapid-order`. | Dominik | 3 h | Logged-in customer sees Rapid Order first on My Account. |
 | 1.2 | Add "Reorder" entry points: (a) mobile mega menu item "Reorder" for logged-in customers (check `customer` via the Storefront API or a body class), (b) a "Reorder from a past order" link in the cart page empty and non-empty states, (c) a "Reorder these items" block on the order confirmation page, (d) a "Reorder" button in the Klaviyo "Loyal Re-Order Accelerator" and post-purchase emails deep-linking to `/account.php#rapid-order`. | Dominik + Michael | 6 h | All four paths land on Rapid Order in one tap. |
 | 1.3 | **Fix the silent redirect.** In `addToCart()` replace `window.location.href = url` with an inline error ("Couldn't add — tap to open product") and log the failure to the Vercel app so you can see why adds fail. | Dominik | 2 h | No redirect on failure; failures visible in logs. |
 | 1.4 | **Fix the wording, not the option.** Keep the MiniBC option and its values as they are. Show "Delivery" instead of "Recurring Order:", drop "(Required)" on this option, and add one helper line under the dropdown ("One-time is the default. Choose auto-refill to have it shipped on a schedule."). Do it in the theme language file or the existing label-tweak Script Manager script, not by renaming the shared option (MiniBC matches on the value text). Separately, turn on the Cornerstone card-button setting and make card buttons always visible on phones so "Choose Options" is at least tappable from listings. | Michael | 3 h | No "(Required)" next to the delivery choice; card buttons visible on a phone. |
