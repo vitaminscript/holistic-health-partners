@@ -328,6 +328,8 @@ Compare against the Step 0 baseline: mobile cart → checkout, login views per v
 | 5 | Visible card buttons on phones | Michael | 0.5 h | 0 |
 | 6 | Search results layout shift | Michael | 0.75 h | 0 |
 | 7 | Menu and nav clutter | Michael | 0.5 h | 0 |
+| 7a | Guard the hidden Recurring Order select in the v4.6 widget (reset to One Time Purchase when blank) | Dominik | 0.3 h | 0 |
+| 7b | Fix the false "backorder" box from BeCloudify Stock Notify on in-stock variants (Magnesium glycinate 180/360 CT) | Michael | 1 h | 0 |
 | 8 | Two-week measurement | Michael | 0.5 h | 1–7 |
 
 Total for Steps 0 to 8: about 9 hours of hands-on work.
